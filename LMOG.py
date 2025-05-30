@@ -3,7 +3,7 @@ import numpy as np
 
 class LiDARMOG:
     def __init__(self, num_bins: int = 360, num_gaussians: int = 3,
-                 learning_rate: float = 0.05, threshold: float = 1.5):
+                 learning_rate: float = 0.05, threshold: float = 1.5, var_min: float = 1e-4):
         self.num_bins = num_bins
         self.K = num_gaussians
         self.alpha = learning_rate
@@ -13,6 +13,7 @@ class LiDARMOG:
         self.vars = np.ones((num_bins, self.K))
         self.initialized = False
         self.last_binned = np.full(self.num_bins, np.nan)
+        self.var_min = var_min
 
     def initialize(self, ranges: np.ndarray):
         for i in range(self.num_bins):
@@ -53,7 +54,7 @@ class LiDARMOG:
                     rho = self.alpha / self.weights[i, k]
                     delta = r - self.means[i, k]
                     self.means[i, k] += rho * delta
-                    self.vars[i, k] = (1 - rho) * self.vars[i, k] + rho * delta * delta
+                    self.vars[i,k] = max((1 - rho) * self.vars[i, k] + rho * delta * delta, self.var_min)
                 else:
                     self.weights[i, k] *= (1 - self.alpha)
             if not matched:
